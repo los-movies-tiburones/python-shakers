@@ -8,4 +8,5 @@ def home():
     return "I don't know"
 
 
-app.run()
+if __name__ == '__main__':
+    app.run()
