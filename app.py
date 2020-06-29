@@ -22,14 +22,14 @@ movies['genres'] = movies['genres'].fillna("").astype('str')
 
 tf = TfidfVectorizer(analyzer='word', ngram_range=(1, 2), min_df=0, stop_words='english')
 tfidf_matrix = tf.fit_transform(movies['genres'])
-cosine_sim = linear_kernel(tfidf_matrix, tfidf_matrix)
 
 
 def genre_recommendations(title, quantity_movies):
     titles = movies['title']
     indices = pd.Series(movies.index, index=movies['title'])
     idx = indices[title]
-    sim_scores = list(enumerate(cosine_sim[idx]))
+    cosine_sim = linear_kernel(tfidf_matrix, tfidf_matrix[idx])
+    sim_scores = list(enumerate(cosine_sim))
     sim_scores = sorted(sim_scores, key=lambda x: x[1], reverse=True)
     sim_scores = sim_scores[1:quantity_movies + 1]
     movie_indices = [i[0] for i in sim_scores]
