@@ -1,11 +1,43 @@
+import os
+
 import flask
+from flask import jsonify
+from flask_pymongo import PyMongo
+import pandas as pd
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.metrics.pairwise import linear_kernel
+from flask import request
 
 app = flask.Flask(__name__)
+app.config["MONGO_URI"] = os.environ['MONGODB_URI']
+mongo = PyMongo(app)
+
+cursor = mongo.db.movie.find()
+movies = [i for i in cursor]
+movies = pd.DataFrame(movies)
+movies['genres'] = movies['genres'].fillna("").astype('str')
+
+tf = TfidfVectorizer(analyzer='word', ngram_range=(1, 2), min_df=0, stop_words='english')
+tfidf_matrix = tf.fit_transform(movies['genres'])
+cosine_sim = linear_kernel(tfidf_matrix, tfidf_matrix)
 
 
-@app.route('/', methods=['GET'])
+def genre_recommendations(title, quantity_movies):
+    titles = movies['title']
+    indices = pd.Series(movies.index, index=movies['title'])
+    idx = indices[title]
+    sim_scores = list(enumerate(cosine_sim[idx]))
+    sim_scores = sorted(sim_scores, key=lambda x: x[1], reverse=True)
+    sim_scores = sim_scores[1:quantity_movies + 1]
+    movie_indices = [i[0] for i in sim_scores]
+    return titles.iloc[movie_indices]
+
+
+@app.route('/movies/recommendations', methods=['GET'])
 def home():
-    return "I don't know"
+    movie = str(request.args.get('name'))
+    recommendations = list(genre_recommendations(movie, 10).to_numpy())
+    return jsonify(recommendations)
 
 
 if __name__ == '__main__':
