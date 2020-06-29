@@ -12,7 +12,10 @@ app = flask.Flask(__name__)
 app.config["MONGO_URI"] = os.environ['MONGODB_URI']
 mongo = PyMongo(app)
 
-cursor = mongo.db.movie.find()
+cursor = mongo.db.movie.find(
+    {},
+    {"genres": 1, "title": 1}
+)
 movies = [i for i in cursor]
 movies = pd.DataFrame(movies)
 movies['genres'] = movies['genres'].fillna("").astype('str')
