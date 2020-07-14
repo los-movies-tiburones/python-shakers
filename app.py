@@ -1,4 +1,5 @@
 import os
+from functools import lru_cache
 
 import flask
 from flask import jsonify
@@ -14,7 +15,7 @@ mongo = PyMongo(app)
 
 cursor = mongo.db.movie.find(
     {},
-    {"genres": 1, "title": 1}
+    {"genres": 1, "title": 1, "averageRating": 1}
 )
 movies = [i for i in cursor]
 movies = pd.DataFrame(movies)
@@ -24,6 +25,7 @@ tf = TfidfVectorizer(analyzer='word', ngram_range=(1, 2), min_df=0, stop_words='
 tfidf_matrix = tf.fit_transform(movies['genres'])
 
 
+@lru_cache
 def genre_recommendations(title, quantity_movies):
     titles = movies['title']
     indices = pd.Series(movies.index, index=movies['title'])
@@ -31,7 +33,8 @@ def genre_recommendations(title, quantity_movies):
     cosine_sim = linear_kernel(tfidf_matrix, tfidf_matrix[idx])
     sim_scores = list(enumerate(cosine_sim))
     sim_scores = sorted(sim_scores, key=lambda x: x[1], reverse=True)
-    sim_scores = sim_scores[1:quantity_movies + 1]
+    sim_scores = list(filter(lambda x: x[0] != idx, sim_scores))
+    sim_scores = sim_scores[:quantity_movies]
     movie_indices = [i[0] for i in sim_scores]
     return titles.iloc[movie_indices]
 
