@@ -25,7 +25,7 @@ tf = TfidfVectorizer(analyzer='word', ngram_range=(1, 2), min_df=0, stop_words='
 tfidf_matrix = tf.fit_transform(movies['genres'])
 
 
-@lru_cache
+@lru_cache()
 def genre_recommendations(title, quantity_movies):
     titles = movies['title']
     indices = pd.Series(movies.index, index=movies['title'])
